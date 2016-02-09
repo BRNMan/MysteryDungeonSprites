@@ -121,6 +121,7 @@ public class MainFrame extends JFrame {
 		BufferedImage pkmn = gd.displayPoke(selectedPokemon); //Change for a different pokemon: Index starts at 0
 		spriteLabel = new JLabel(new ImageIcon(pkmn));
 		spritePanel.add(spriteLabel);
+		pack();
 	}
 
 }

@@ -95,8 +95,10 @@ public class GraphicsDecoder {
 		BufferedImage ans = new BufferedImage(256,2400,BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = ans.createGraphics();
 		ArrayList<int[]> imgData = getSprites(pokemonIndex);
+		PokemonData pd = new PokemonData(inROM);
 		ArrayList<Color[]> listPal = getPalettes();
-		Color[] myPal = listPal.get(3);
+		Color[] myPal = listPal.get(pd.getPokemon(pokemonIndex+1).getPalleteIndex());
+		//Arranges pixels decently.
 		for(int strip = 0; strip < imgData.size(); strip++) {
 			for(int j = 0; j < imgData.get(strip).length; j++) {
 				ans.setRGB(j%8+8*(j/64),

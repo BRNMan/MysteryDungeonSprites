@@ -12,8 +12,10 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -23,12 +25,14 @@ public class MainFrame extends JFrame {
 	
 	JPanel spritePanel, dataPanel, controlPanel;
 	JButton loadButton;
-	JLabel label;
+	JLabel label, spriteLabel;
+	JComboBox<String> pokeChooser;
 	JFileChooser jfc;
 	File romFile;
 	RandomAccessFile inROM;
 	GraphicsDecoder gd;
 	PokemonData pd;
+	int selectedPokemon = 0;
 	
 	public static void main(String[] args) {
 		MainFrame mf = new MainFrame();
@@ -39,6 +43,7 @@ public class MainFrame extends JFrame {
 	}
 	
 	MainFrame() {		
+
 		GridLayout gl = new GridLayout(1,3);
 		gl.setHgap(10);
 		setLayout(gl);
@@ -51,11 +56,25 @@ public class MainFrame extends JFrame {
 		dataPanel = new JPanel();
 		add(dataPanel);
 		
-		controlPanel = new JPanel();		
+		controlPanel = new JPanel();
+		controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
+		pokeChooser = new JComboBox<String>();
+		pokeChooser.setEnabled(false);
+		pokeChooser.addActionListener( new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				selectedPokemon = pokeChooser.getSelectedIndex();
+				try {
+					updatePokemon();
+				} catch (IOException e1) {
+					System.out.println("whatev");
+				}
+			} 
+		});
+		
 		loadButton = new JButton();
 		loadButton.setText("Load File");
 		loadButton.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				try{
@@ -65,17 +84,15 @@ public class MainFrame extends JFrame {
 						romFile = jfc.getSelectedFile();
 						inROM = new RandomAccessFile(romFile, "rw");
 						gd = new GraphicsDecoder(romFile, inROM);
-						BufferedImage pkmn = gd.displayPoke(100);
-						JLabel hello = new JLabel(new ImageIcon(pkmn));
-						spritePanel.add(hello);
-//						for(int i = 0; i < 423; i++) {
-//							pd = new PokemonData(inROM);
-//							PokemonEntry pe = pd.getPokemon(i);
-//							System.out.println(pe.getSpecies() + " the " + pe.getCategory() + " Pokemon.");
-//							System.out.println("Palette #: " + pe.palette + " Pokemon #: " + i);
-//						}
+						updatePokemon();
+						for(int i = 1; i < 423; i++) {
+								pd = new PokemonData(inROM);
+								PokemonEntry pe = pd.getPokemon(i);
+								pokeChooser.addItem(pe.getSpecies());
+						}
+						pokeChooser.setEnabled(true);
+						controlPanel.add(pokeChooser);
 						
-						inROM.close();
 					} catch (IOException fe) {
 						fe.printStackTrace();
 					}	
@@ -96,6 +113,14 @@ public class MainFrame extends JFrame {
 		
 		controlPanel.add(loadButton);
 		add(controlPanel);
+	}
+	
+	private void updatePokemon() throws IOException {
+		if(spriteLabel != null) 
+			spritePanel.remove(spriteLabel);
+		BufferedImage pkmn = gd.displayPoke(selectedPokemon); //Change for a different pokemon: Index starts at 0
+		spriteLabel = new JLabel(new ImageIcon(pkmn));
+		spritePanel.add(spriteLabel);
 	}
 
 }

@@ -92,7 +92,7 @@ public class GraphicsDecoder {
 	}
 	
 	public BufferedImage displayPoke(int pokemonIndex) throws IOException {
-		BufferedImage ans = new BufferedImage(128,1200,BufferedImage.TYPE_INT_RGB);
+		BufferedImage ans = new BufferedImage(256,2400,BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = ans.createGraphics();
 		ArrayList<int[]> imgData = getSprites(pokemonIndex);
 		ArrayList<Color[]> listPal = getPalettes();

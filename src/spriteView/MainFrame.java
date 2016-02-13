@@ -1,6 +1,8 @@
 package spriteView;
 
+import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,6 +14,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -32,7 +35,7 @@ public class MainFrame extends JFrame {
 	RandomAccessFile inROM;
 	GraphicsDecoder gd;
 	PokemonData pd;
-	int selectedPokemon = 0;
+	PokemonEntry selectedPokemon;
 	
 	public static void main(String[] args) {
 		MainFrame mf = new MainFrame();
@@ -43,7 +46,6 @@ public class MainFrame extends JFrame {
 	}
 	
 	MainFrame() {		
-
 		GridLayout gl = new GridLayout(1,3);
 		gl.setHgap(10);
 		setLayout(gl);
@@ -60,10 +62,11 @@ public class MainFrame extends JFrame {
 		controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
 		pokeChooser = new JComboBox<String>();
 		pokeChooser.setEnabled(false);
+		pokeChooser.setMaximumSize(new Dimension(200, 100));
 		pokeChooser.addActionListener( new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				selectedPokemon = pokeChooser.getSelectedIndex();
+				selectedPokemon = pd.getPokemon(pokeChooser.getSelectedIndex());
 				try {
 					updatePokemon();
 				} catch (IOException e1) {
@@ -84,14 +87,15 @@ public class MainFrame extends JFrame {
 						romFile = jfc.getSelectedFile();
 						inROM = new RandomAccessFile(romFile, "rw");
 						gd = new GraphicsDecoder(romFile, inROM);
+						pd = new PokemonData(inROM);
+						selectedPokemon = pd.getPokemon(1);
 						updatePokemon();
 						for(int i = 1; i < 423; i++) {
-								pd = new PokemonData(inROM);
 								PokemonEntry pe = pd.getPokemon(i);
 								pokeChooser.addItem(pe.getSpecies());
 						}
 						pokeChooser.setEnabled(true);
-						controlPanel.add(pokeChooser);
+						controlPanel.add(pokeChooser, BorderLayout.NORTH);
 						
 					} catch (IOException fe) {
 						fe.printStackTrace();

@@ -12,7 +12,7 @@ public class PokemonData {
 	PokemonData(RandomAccessFile ROM) throws IOException {
 		pokes = new ArrayList<PokemonEntry>();
 		for(int i = 0; i < 423; i++) {
-			pokes.add(new PokemonEntry(startIndex + 0x10 + 72*i, ROM));
+			pokes.add(new PokemonEntry(startIndex + 0x10 + 72*i, ROM, i));
 		}
 	}
 	

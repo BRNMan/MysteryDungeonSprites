@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 
 public class PokemonEntry {
+	int pokemonNumber; //"Pokedex" order. Not in file, but important.
+	
 	int speciesName; // See http://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_Mystery_Dungeon:_Red_Rescue_Team:Miscellaneous_Data:Main_Pok%C3%A9mon_Data
 	int speciesCategory;
 	byte palette;
@@ -18,7 +20,9 @@ public class PokemonEntry {
 	byte[] recruitChance;
 	
 	RandomAccessFile myROM;
-	PokemonEntry(int startIndex, RandomAccessFile ROM) throws IOException {
+	PokemonEntry(int startIndex, RandomAccessFile ROM, int PokeNum) throws IOException {
+		pokemonNumber = PokeNum;
+				
 		myROM = ROM;
 		byte[] buffer = new byte[4];
 		myROM.seek(startIndex);
@@ -31,6 +35,8 @@ public class PokemonEntry {
 		myROM.read(buffer);
 		movementSpeed = Util.toIndex(buffer);
 	}
+	
+	public int getNumber() {return pokemonNumber;}
 	
 	public String getSpecies() throws IOException {
 		StringBuilder name = new StringBuilder();

@@ -90,9 +90,20 @@ public class MainFrame extends JFrame {
 						pd = new PokemonData(inROM);
 						selectedPokemon = pd.getPokemon(1);
 						updatePokemon();
+						String speciesName = "";
+						int sameName = 0;
 						for(int i = 1; i < 423; i++) {
 								PokemonEntry pe = pd.getPokemon(i);
-								pokeChooser.addItem(pe.getSpecies());
+								if(speciesName.equals(pe.getSpecies()))
+									sameName++;
+								else
+									sameName = 0;
+								
+								speciesName = pe.getSpecies();
+								if(sameName != 0)
+									pokeChooser.addItem(speciesName + (sameName));
+								else
+									pokeChooser.addItem(speciesName);
 						}
 						pokeChooser.setEnabled(true);
 						controlPanel.add(pokeChooser, BorderLayout.NORTH);
@@ -101,18 +112,6 @@ public class MainFrame extends JFrame {
 						fe.printStackTrace();
 					}	
 			}
-			
-			private BufferedImage makePalImage() {
-				ArrayList<Color[]> listPal = gd.getPalettes();
-				BufferedImage biff = new BufferedImage(16,listPal.size(),BufferedImage.TYPE_INT_RGB);
-				for (int y = 0; y < listPal.size(); y++) {
-					for(int x = 0; x < listPal.get(y).length; x++) { 
-						biff.setRGB(x, y, listPal.get(y)[x].getRGB());
-					}
-				}
-				System.out.println("Good stuff!");
-				return biff;
-			}			
 		});
 		
 		controlPanel.add(loadButton);

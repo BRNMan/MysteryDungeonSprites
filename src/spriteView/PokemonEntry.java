@@ -63,4 +63,8 @@ public class PokemonEntry {
 	public int getPalleteIndex() {
 		return palette;
 	}
+	
+	public int getSize() {
+		return size;
+	}
 }

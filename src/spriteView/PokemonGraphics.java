@@ -12,11 +12,13 @@ public class PokemonGraphics {
 	static RandomAccessFile ROM;
 	static byte[] siro = new byte[]{0x53,0x49,0x52,0x4F};
 	private ArrayList<int[]> sprites;
+	private ArrayList<Sprite> newSprites;
 	
 	PokemonGraphics(int StartIndex, RandomAccessFile inROM) throws IOException {
 		startIndex = StartIndex;
 		ROM = inROM;
 		sprites = new ArrayList<int[]>();
+		newSprites = new ArrayList<Sprite>();
 		byte[] myPointer = new byte[4];
 		ROM.seek(startIndex);
 		ROM.read(myPointer);
@@ -42,7 +44,8 @@ public class PokemonGraphics {
 		pB = Util.toIndex(myPointer);
 	}
 	
-	public ArrayList<int[]> processSprites() throws IOException {
+	
+	public ArrayList<Sprite> processSprites() throws IOException {
 		byte[] spritePointer = new byte[4];
 		byte[] tileSize = new byte[2];
 		int numBytesRead;
@@ -59,6 +62,8 @@ public class PokemonGraphics {
 		//Iterate through sprites
 		while(currentSpriteData<endIndex) {
 			
+			Sprite current = null;
+			
 			ROM.seek(currentSpriteData);//Go back to iterating through the list
 			ROM.read(spritePointer); //Goes to the sprite data.
 			int actualData = Util.toIndex(spritePointer); //Where the sprite foot is.
@@ -68,10 +73,13 @@ public class PokemonGraphics {
 			
 			ROM.read(spritePointer);//Points us to the location of the sprite's pixels
 			if(Arrays.equals(spritePointer, new byte[] {(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF})) {
+				
 				currentSprite = spriteStart; 					//Weird case with Bulbasaur. To beginning of all sprites
 				numBytesRead = 0x200;
 				int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
 				sprites.add(Arrays.copyOf(mySprite, mySprite.length));
+				current = new Sprite(mySprite);
+				newSprites.add(current);
 			}
 			else if(Arrays.equals(spritePointer, new byte[] {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00})) {
 				
@@ -87,12 +95,18 @@ public class PokemonGraphics {
 					long fp = ROM.getFilePointer();
 					int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
 					sprites.add(Arrays.copyOf(mySprite, mySprite.length));
+					if(current != null) 
+						current.addSubsprite(mySprite);
+					else
+						current = new Sprite(mySprite);
+					
 					ROM.seek(fp);
 					ROM.read(spritePointer);
 					ROM.read(spritePointer);
 					endFlag = Util.toBigEndian(spritePointer);
 					ROM.read(spritePointer);
 				} while(ROM.getFilePointer() < stopPoint - 0x10);
+				newSprites.add(current);
 				
 			}
 			else {
@@ -111,16 +125,22 @@ public class PokemonGraphics {
 					long fp = ROM.getFilePointer();
 					int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
 					sprites.add(Arrays.copyOf(mySprite, mySprite.length));
+					if(current != null) 
+						current.addSubsprite(mySprite);
+					else
+						current = new Sprite(mySprite);
+					
 					ROM.seek(fp);
 					ROM.read(spritePointer);
 					ROM.read(spritePointer);
 					endFlag = Util.toBigEndian(spritePointer);
 					ROM.read(spritePointer);
 				} while(ROM.getFilePointer() < stopPoint - 0x10);
+				newSprites.add(current);
 			}
 			currentSpriteData+=4;
 		}
-		return sprites;
+		return newSprites;
 	}
 	
 	private int getStopPoint(int actualData, int nextData, byte[] spritePointer) throws IOException {

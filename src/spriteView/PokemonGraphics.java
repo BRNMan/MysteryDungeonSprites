@@ -110,11 +110,6 @@ public class PokemonGraphics {
 				
 			}
 			else {
-				/*currentSprite = Util.toIndex(spritePointer); //Pixel location
-				ROM.read(tileSize); //How many bytes to read from each sprite
-				numBytesRead = Util.toBigEndian(tileSize);
-				int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
-				sprites.add(Arrays.copyOf(mySprite, mySprite.length));*/
 				int stopPoint = getStopPoint(actualData, nextData, spritePointer);
 				int endFlag;
 				do {	

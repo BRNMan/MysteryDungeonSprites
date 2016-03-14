@@ -122,8 +122,6 @@ public class GraphicsDecoder {
 				catch(IndexOutOfBoundsException e) {    //The whole sprite delivery method will eventually be changed.
 					System.out.println(strip + " " + j);//But a temporary fix is needed for the big boys.
 				}
-				//g.setColor(myPal[imgData.get(strip)[j]]);
-				//g.drawRect(j%8+8*(j/64), j/8-8*(j/64) + 8*strip, 1, 1);
 			}
 		}
 		return ans;

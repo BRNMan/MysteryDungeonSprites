@@ -1,5 +1,6 @@
 package spriteView;
 
+
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -15,6 +16,7 @@ public class GraphicsDecoder {
 	RandomAccessFile inROM;
 	int palettePointer;
 	int[] pokemonPointers, pokemonIDs;
+	private int pixelX, tileIndex; //The pixel and tile indexes.
 	
 	public GraphicsDecoder(File romFile, RandomAccessFile InROM) {
 		try {
@@ -61,11 +63,6 @@ public class GraphicsDecoder {
 		}
 	}
 	
-	public ArrayList<Sprite> getSprites(int index) throws IOException {
-		PokemonGraphics bulbasaur = new PokemonGraphics(pokemonPointers[index], inROM);
-		return bulbasaur.processSprites();
-	}
-	
 	
 	//Neatly organizes colors into a list of palettes of 16 Colors
 	public ArrayList<Color[]> getPalettes() {
@@ -91,16 +88,31 @@ public class GraphicsDecoder {
 		return listPal;
 	}
 	
+	/**
+	 * Now you can run a pokemonEntry through and get sprites back.
+	 * @param pe The pokemon you want sprites from.
+	 * @return An ArrayList of its sprites.
+	 * @throws IOException
+	 */
+	public ArrayList<Sprite> getSprites(PokemonEntry pe) throws IOException {
+		return new PokemonGraphics(pokemonPointers[pe.getNumber()], inROM).processSprites();
+	}
+	
+	//Old method.
 	public BufferedImage displayPoke(PokemonEntry myPoke) throws IOException {
 		BufferedImage ans = new BufferedImage(500,2000,BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = ans.createGraphics();
 		
 		//Convert Sprites to Pixels.
-		ArrayList<Sprite> pokemon = getSprites(myPoke.getNumber());
+		//This line takes the pokemon selected, and gets an ArrayList of sprites from it.
+		ArrayList<Sprite> pokemon = new PokemonGraphics(pokemonPointers[myPoke.getNumber()], inROM).processSprites();
 		ArrayList<int[]> imgData = new ArrayList<int[]>();
+		ArrayList<Integer> offsetData = new ArrayList<Integer>();
 		for(int i = 0; i < pokemon.size(); i++) {
-			for(int j = 0; j < pokemon.get(i).getNumSubsprites(); j++)
+			for(int j = 0; j < pokemon.get(i).getNumSubsprites(); j++) {
 				imgData.add(pokemon.get(i).getSubsprite(j));
+				offsetData.add(pokemon.get(i).getOffset(j));
+			}
 		}
 		
 		PokemonData pd = new PokemonData(inROM);
@@ -115,15 +127,94 @@ public class GraphicsDecoder {
 		for(int strip = 0; strip < imgData.size(); strip++) {
 			for(int j = 0; j < imgData.get(strip).length; j++) {
 				try{
-				ans.setRGB(j%8+8*(j/64),
+				ans.setRGB(j%8 + 8*(j/64),
 						j/8-8*(j/64) + 8*strip,
 						myPal[imgData.get(strip)[j]].getRGB());
 				}
 				catch(IndexOutOfBoundsException e) {    //The whole sprite delivery method will eventually be changed.
-					System.out.println(strip + " " + j);//But a temporary fix is needed for the big boys.
+					System.out.println(strip + " woop " + j);//But a temporary fix is needed for the big boys.
 				}
 			}
 		}
 		return ans;
+	}
+	
+	//New method. Displays individual sprites instead.
+	public BufferedImage displayPoke(PokemonEntry myPoke, int spriteIndex) throws IOException {
+		BufferedImage temp = new BufferedImage(128,128,BufferedImage.TYPE_INT_RGB);
+		Graphics2D g = temp.createGraphics();
+		
+		//Convert Sprites to Pixels.
+		//This line takes the pokemon selected, and gets an ArrayList of sprites from it.
+		ArrayList<Sprite> pokemon = new PokemonGraphics(pokemonPointers[myPoke.getNumber()], inROM).processSprites();
+		Sprite selectedSprite = pokemon.get(spriteIndex);
+		ArrayList<int[]> imgData = new ArrayList<int[]>();
+		ArrayList<Integer> offsetData = new ArrayList<Integer>();
+		//Gets the pixels and offsets for the sprite.
+		for(int j = 0; j < selectedSprite.getNumSubsprites(); j++) {
+				imgData.add(selectedSprite.getSubsprite(j));
+				offsetData.add(selectedSprite.getOffset(j));
+		}
+		
+		//Gets palettes
+		PokemonData pd = new PokemonData(inROM);
+		ArrayList<Color[]> listPal = getPalettes();
+		Color[] myPal = listPal.get(pd.getPokemon(myPoke.getNumber()+1).getPalleteIndex()); //Starts with mystery who has no sprites.
+		
+		int pokeSize = myPoke.getSize(); //The pokemon's actual size. For putting the image together.		
+		
+		pixelX = 0; tileIndex = 0; //reset pixel location
+		for(int i = 0; i < imgData.size(); i++) {
+			//If there is blank space.
+			if(offsetData.get(i)!=0) {
+				//Set pixels to transparent.
+				for(int j = 0; j < offsetData.get(i)*2; j++) {
+					temp.setRGB(getRealX(pokeSize), getRealY(pokeSize), 
+								myPal[0].getRGB());
+					pixelX++;//Increase pixel index.
+				}
+			}
+			//Then do the associated subsprite.
+			for(int j = 0; j < imgData.get(i).length; j++) {
+				temp.setRGB(getRealX(pokeSize), getRealY(pokeSize), 
+						myPal[imgData.get(i)[j]].getRGB());
+				pixelX++;
+			}
+		}
+		
+		//Arranges pixels decently.
+				/*ans.setRGB(j%8 + 8*(j/64),
+						j/8-8*(j/64) + 8*strip,
+						myPal[imgData.get(strip)[j]].getRGB());
+				 */
+		return temp;
+	}
+	
+	private int getRealX(int pokeSize) {
+		int T = getNumTiles(pokeSize);
+		int ans = pixelX%8 + 8*(pixelX/64)
+				-(pixelX/(64*T))*(8*T); //However many rows.
+		return ans;
+	}
+	
+	private int getRealY(int pokeSize) {
+		int T = getNumTiles(pokeSize);
+		int ans = pixelX/8 - 8*(pixelX/64) + 8*(pixelX/(64*T));
+		return ans;
+	}
+	
+	private int getNumTiles(int pokeSize) {
+		int numTiles;
+		switch(pokeSize) {
+		case 1:
+			numTiles = 4;
+		case 2:
+			numTiles = 4;
+		case 4: 
+			numTiles = 8;
+		default:
+			numTiles = 4;
+		}
+		return numTiles;
 	}
 }

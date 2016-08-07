@@ -2,6 +2,7 @@ package spriteView;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.ArrayList;
 
 public class PokemonEntry {
 	int pokemonNumber; //"Pokedex" order. Not in file, but important.
@@ -64,7 +65,6 @@ public class PokemonEntry {
 		return palette;
 	}
 	
-	public int getSize() {
-		return size;
-	}
+	public int getSize() {return size;}
+		
 }

@@ -11,13 +11,11 @@ public class PokemonGraphics {
 	int startIndex, pA, pB, pCII, pCIII, endIndex, spriteStart;
 	static RandomAccessFile ROM;
 	static byte[] siro = new byte[]{0x53,0x49,0x52,0x4F};
-	private ArrayList<int[]> sprites;
 	private ArrayList<Sprite> newSprites;
 	
 	PokemonGraphics(int StartIndex, RandomAccessFile inROM) throws IOException {
 		startIndex = StartIndex;
 		ROM = inROM;
-		sprites = new ArrayList<int[]>();
 		newSprites = new ArrayList<Sprite>();
 		byte[] myPointer = new byte[4];
 		ROM.seek(startIndex);
@@ -44,9 +42,8 @@ public class PokemonGraphics {
 		pB = Util.toIndex(myPointer);
 	}
 	
-	
 	public ArrayList<Sprite> processSprites() throws IOException {
-		byte[] spritePointer = new byte[4];
+		byte[] spritePointer = new byte[4]; //Will be used as a general 4 byte buffer.
 		byte[] tileSize = new byte[2];
 		int numBytesRead;
 		
@@ -74,36 +71,36 @@ public class PokemonGraphics {
 			ROM.read(spritePointer);//Points us to the location of the sprite's pixels
 			if(Arrays.equals(spritePointer, new byte[] {(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF})) {
 				
-				currentSprite = spriteStart; 					//Weird case with Bulbasaur. To beginning of all sprites
-				numBytesRead = 0x200;
+				currentSprite = spriteStart; //Weird case with Bulbasaur. To beginning of all sprites
+				numBytesRead = 0x200;		 //Never mind, just my corrupted copy.
 				int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
-				sprites.add(Arrays.copyOf(mySprite, mySprite.length));
-				current = new Sprite(mySprite);
+				current = new Sprite(mySprite, 0);
 				newSprites.add(current);
 			}
 			else if(Arrays.equals(spritePointer, new byte[] {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00})) {
 				
 				int stopPoint = getStopPoint(actualData, nextData, spritePointer);
 				
-				int endFlag;
+				int offset;
 				ROM.read(spritePointer); //This means that the pointer is after the size.
+				offset = Util.toBigEndian(spritePointer); //This is the real first offset. Change please
 				ROM.read(spritePointer);
 				do {
 					currentSprite = Util.toIndex(spritePointer);
 					ROM.read(spritePointer);	
 					numBytesRead = Util.toBigEndian(spritePointer);	//actually reading tileSize
 					long fp = ROM.getFilePointer();
-					int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
-					sprites.add(Arrays.copyOf(mySprite, mySprite.length));
-					if(current != null) 
-						current.addSubsprite(mySprite);
-					else
-						current = new Sprite(mySprite);
-					
+					int[] mySprite = spriteToPicture(currentSprite, numBytesRead);					
 					ROM.seek(fp);
 					ROM.read(spritePointer);
+
+					if(current != null) 
+						current.addSubsprite(mySprite,offset);
+					else
+						current = new Sprite(mySprite,offset);
+					
 					ROM.read(spritePointer);
-					endFlag = Util.toBigEndian(spritePointer);
+					offset = Util.toBigEndian(spritePointer);
 					ROM.read(spritePointer);
 				} while(ROM.getFilePointer() < stopPoint - 0x10);
 				newSprites.add(current);
@@ -111,7 +108,7 @@ public class PokemonGraphics {
 			}
 			else {
 				int stopPoint = getStopPoint(actualData, nextData, spritePointer);
-				int endFlag;
+				int offset;
 				do {	
 					
 					currentSprite = Util.toIndex(spritePointer);
@@ -119,16 +116,16 @@ public class PokemonGraphics {
 					numBytesRead = Util.toBigEndian(spritePointer);	//actually tileSize
 					long fp = ROM.getFilePointer();
 					int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
-					sprites.add(Arrays.copyOf(mySprite, mySprite.length));
-					if(current != null) 
-						current.addSubsprite(mySprite);
-					else
-						current = new Sprite(mySprite);
-					
 					ROM.seek(fp);
 					ROM.read(spritePointer);
+					
 					ROM.read(spritePointer);
-					endFlag = Util.toBigEndian(spritePointer);
+					offset = Util.toBigEndian(spritePointer);
+					if(current != null) 
+						current.addSubsprite(mySprite,offset);
+					else
+						current = new Sprite(mySprite,offset);
+					
 					ROM.read(spritePointer);
 				} while(ROM.getFilePointer() < stopPoint - 0x10);
 				newSprites.add(current);

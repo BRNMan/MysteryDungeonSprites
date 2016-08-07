@@ -30,14 +30,17 @@ public class MainFrame extends JFrame {
 	JButton loadButton;
 	JLabel label, spriteLabel;
 	JComboBox<String> pokeChooser;
+	JComboBox<Integer> spriteChooser;
 	JFileChooser jfc;
 	File romFile;
 	RandomAccessFile inROM;
 	GraphicsDecoder gd;
 	PokemonData pd;
+	
 	PokemonEntry selectedPokemon;
 	
 	public static void main(String[] args) {
+		//Initial Initialization
 		MainFrame mf = new MainFrame();
 		mf.setSize(800, 600);
 		mf.setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -62,17 +65,37 @@ public class MainFrame extends JFrame {
 		controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
 		pokeChooser = new JComboBox<String>();
 		pokeChooser.setEnabled(false);
-		pokeChooser.setMaximumSize(new Dimension(200, 100));
+		pokeChooser.setMaximumSize(new Dimension(200, 50));
+		spriteChooser = new JComboBox<Integer>();
+		spriteChooser.setEnabled(false);
+		spriteChooser.setMaximumSize(new Dimension(200,50));
+		
 		pokeChooser.addActionListener( new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				selectedPokemon = pd.getPokemon(pokeChooser.getSelectedIndex());
 				try {
-					updatePokemon();
+					
+					updateIndicies(pd.getPokemon(pokeChooser.getSelectedIndex()));
+					spriteChooser.setSelectedIndex(0); //To change the pokemon, we want to make sure this is 0, the least amount of sprites possible.
+					updatePokemon(pd.getPokemon(pokeChooser.getSelectedIndex()), 0);
 				} catch (IOException e1) {
 					System.out.println("whatev");
 				}
 			} 
+		});
+		
+		spriteChooser.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				try {
+					if(spriteChooser.isEnabled()) {
+						if(spriteChooser.getSelectedIndex() != -1) //Checks if you've selected something yet.
+							updatePokemon(pd.getPokemon(pokeChooser.getSelectedIndex()), spriteChooser.getSelectedIndex());
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
 		});
 		
 		loadButton = new JButton();
@@ -88,8 +111,7 @@ public class MainFrame extends JFrame {
 						inROM = new RandomAccessFile(romFile, "rw");
 						gd = new GraphicsDecoder(romFile, inROM);
 						pd = new PokemonData(inROM);
-						selectedPokemon = pd.getPokemon(1);
-						updatePokemon();
+						updatePokemon(pd.getPokemon(1), 0); //Initial arguments.
 						String speciesName = "";
 						int sameName = 0;
 						for(int i = 1; i < 423; i++) {
@@ -107,6 +129,10 @@ public class MainFrame extends JFrame {
 						}
 						pokeChooser.setEnabled(true);
 						controlPanel.add(pokeChooser, BorderLayout.NORTH);
+						updateIndicies(pd.getPokemon(1));
+						spriteChooser.setSelectedIndex(0);
+						spriteChooser.setEnabled(true);
+						controlPanel.add(spriteChooser, BorderLayout.NORTH);
 						
 					} catch (IOException fe) {
 						fe.printStackTrace();
@@ -118,10 +144,24 @@ public class MainFrame extends JFrame {
 		add(controlPanel);
 	}
 	
-	private void updatePokemon() throws IOException {
+	private void updateIndicies(PokemonEntry selectedPokemon) throws IOException {
+		int max = gd.getSprites(selectedPokemon).size();
+		spriteChooser.removeAllItems();
+		for(int i = 0; i < max; i++) {
+			spriteChooser.addItem(i);
+		}
+	}
+	
+	/**
+	 * Changes the sprites displayed on the screen.
+	 * @param selectedPokemon The PokemonEntry selected
+	 * @param selectedIndex The Sprite Index of the Pokemon Selected
+	 * @throws IOException
+	 */
+	private void updatePokemon(PokemonEntry selectedPokemon, int selectedIndex) throws IOException {
 		if(spriteLabel != null) 
 			spritePanel.remove(spriteLabel);
-		BufferedImage pkmn = gd.displayPoke(selectedPokemon); //Change for a different pokemon: Index starts at 0
+		BufferedImage pkmn = gd.displayPoke(selectedPokemon, selectedIndex); //Change for a different pokemon: Index starts at 0
 		spriteLabel = new JLabel(new ImageIcon(pkmn));
 		spritePanel.add(spriteLabel);
 		pack();

@@ -140,10 +140,10 @@ public class GraphicsDecoder {
 	}
 	
 	//New method. Displays individual sprites instead.
+	//TODO: Make offsets independent of sprites
 	public BufferedImage displayPoke(PokemonEntry myPoke, int spriteIndex) throws IOException {
 		BufferedImage temp = new BufferedImage(128,128,BufferedImage.TYPE_INT_RGB);
 		Graphics2D g = temp.createGraphics();
-		
 		//Convert Sprites to Pixels.
 		//This line takes the pokemon selected, and gets an ArrayList of sprites from it.
 		ArrayList<Sprite> pokemon = new PokemonGraphics(pokemonPointers[myPoke.getNumber()], inROM).processSprites();
@@ -155,7 +155,13 @@ public class GraphicsDecoder {
 				imgData.add(selectedSprite.getSubsprite(j));
 				offsetData.add(selectedSprite.getOffset(j));
 		}
-		
+		boolean isTrailing = false;
+		int trailingIndex = selectedSprite.getNumSubsprites(); //For trailing offset index.
+		if(selectedSprite.getNumOffsets() == trailingIndex+1) {  //If we have the trailing offset add it in too.
+			offsetData.add(selectedSprite.getOffset(trailingIndex));
+			isTrailing = true;
+		}
+			
 		//Gets palettes
 		PokemonData pd = new PokemonData(inROM);
 		ArrayList<Color[]> listPal = getPalettes();
@@ -168,7 +174,7 @@ public class GraphicsDecoder {
 			//If there is blank space.
 			if(offsetData.get(i)!=0) {
 				//Set pixels to transparent.
-				for(int j = 0; j < offsetData.get(i)*2; j++) {
+				for(int j = 0; j < offsetData.get(i)*2; j++) { //Each byte is 2 pixels, so multiply by 2.
 					temp.setRGB(getRealX(pokeSize), getRealY(pokeSize), 
 								myPal[0].getRGB());
 					pixelX++;//Increase pixel index.
@@ -181,17 +187,19 @@ public class GraphicsDecoder {
 				pixelX++;
 			}
 		}
-		
-		//Arranges pixels decently.
-				/*ans.setRGB(j%8 + 8*(j/64),
-						j/8-8*(j/64) + 8*strip,
-						myPal[imgData.get(strip)[j]].getRGB());
-				 */
+		if(isTrailing) {  //Add last offset if its there
+			for(int j = 0; j < offsetData.get(trailingIndex)*2; j++) { //Each byte is 2 pixels, so multiply by 2.
+				temp.setRGB(getRealX(pokeSize), getRealY(pokeSize), 
+							myPal[0].getRGB());
+				pixelX++;//Increase pixel index.
+			}
+		}
 		return temp;
 	}
 	
 	private int getRealX(int pokeSize) {
 		int T = getNumTiles(pokeSize);
+		//Loops around pixels according to how many bytes tiles are.
 		int ans = pixelX%8 + 8*(pixelX/64)
 				-(pixelX/(64*T))*(8*T); //However many rows.
 		return ans;
@@ -199,11 +207,13 @@ public class GraphicsDecoder {
 	
 	private int getRealY(int pokeSize) {
 		int T = getNumTiles(pokeSize);
+		//I don't know why I wrote it like this. I could've just done some ifs.
 		int ans = pixelX/8 - 8*(pixelX/64) + 8*(pixelX/(64*T));
 		return ans;
 	}
 	
 	private int getNumTiles(int pokeSize) {
+		//This method is obviously wrong, but I don't know the size parameter yet so I'll keep it.
 		int numTiles;
 		switch(pokeSize) {
 		case 1:

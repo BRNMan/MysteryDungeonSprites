@@ -5,8 +5,7 @@ import java.util.Arrays;
 
 public class Sprite {
 	private ArrayList<int[]> imgData;
-	private ArrayList<Integer> offsetData;
-	
+	private ArrayList<Integer> offsetData;	
 	
 	Sprite(int[] pixelData, int offset) {
 		imgData = new ArrayList<int[]>();
@@ -15,14 +14,17 @@ public class Sprite {
 		offsetData.add(offset);
 	}
 	
-	//TODO: Add constructor for offset only.
-	
 	public void addSubsprite(int[] pixelData) {
 		imgData.add(pixelData);
 	}
 	
 	public void addSubsprite(int[] pixelData, int offset) {
 		imgData.add(pixelData);
+		offsetData.add(offset);
+	}
+	
+	//For sprites with blank space to be added at the end.
+	public void addOffset(int offset) {
 		offsetData.add(offset);
 	}
 	
@@ -39,5 +41,9 @@ public class Sprite {
 	
 	public int getOffset(int index) {
 		return offsetData.get(index);
+	}
+	
+	public int getNumOffsets() {
+		return offsetData.size();
 	}
 }

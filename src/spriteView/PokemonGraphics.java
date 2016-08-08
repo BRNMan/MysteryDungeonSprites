@@ -10,7 +10,7 @@ import java.util.Arrays;
 public class PokemonGraphics {
 	int startIndex, pA, pB, pCII, pCIII, endIndex, spriteStart;
 	static RandomAccessFile ROM;
-	static byte[] siro = new byte[]{0x53,0x49,0x52,0x4F};
+	static byte[] SIRO = new byte[]{0x53,0x49,0x52,0x4F};
 	private ArrayList<Sprite> newSprites;
 	
 	PokemonGraphics(int StartIndex, RandomAccessFile inROM) throws IOException {
@@ -21,7 +21,7 @@ public class PokemonGraphics {
 		ROM.seek(startIndex);
 		ROM.read(myPointer);
 		
-		if(!Arrays.equals(myPointer, siro)) {
+		if(!Arrays.equals(myPointer, SIRO)) {
 			System.out.println("Bad Header"); 
 			return;
 		}
@@ -45,20 +45,12 @@ public class PokemonGraphics {
 	public ArrayList<Sprite> processSprites() throws IOException {
 		byte[] spritePointer = new byte[4]; //Will be used as a general 4 byte buffer.
 		byte[] tileSize = new byte[2];
-		int numBytesRead;
-		
-		//For some reason, the bulbasaur has sprite data that makes 6 FF bytes refer to the top of the sprite.
-		ROM.seek(pCII - 4);
-		ROM.read(spritePointer);
-		spriteStart = Util.toIndex(spritePointer) + 28;
-		
+		int numBytesRead;		
 		int currentSpriteData = pCIII; //The pointer to the data we're on
-		int currentSprite; //The index of the pixels
-		Util.printArray(currentSpriteData);
+		int currentSprite;						 //The index of the pixels
 		
-		//Iterate through sprites
+		//Iterate through sprites for a given pokemon
 		while(currentSpriteData<endIndex) {
-			
 			Sprite current = null;
 			
 			ROM.seek(currentSpriteData);//Go back to iterating through the list
@@ -67,23 +59,13 @@ public class PokemonGraphics {
 			ROM.read(spritePointer);
 			int nextData = Util.toIndex(spritePointer);//Next data to find out where we have to stop.
 			ROM.seek(actualData);//Points us to sprite information
-			
 			ROM.read(spritePointer);//Points us to the location of the sprite's pixels
-			if(Arrays.equals(spritePointer, new byte[] {(byte)0xFF,(byte)0xFF,(byte)0xFF,(byte)0xFF})) {
-				
-				currentSprite = spriteStart; //Weird case with Bulbasaur. To beginning of all sprites
-				numBytesRead = 0x200;		 //Never mind, just my corrupted copy.
-				int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
-				current = new Sprite(mySprite, 0);
-				newSprites.add(current);
-			}
-			else if(Arrays.equals(spritePointer, new byte[] {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00})) {
-				
+			if(Arrays.equals(spritePointer, new byte[] {(byte)0x00,(byte)0x00,(byte)0x00,(byte)0x00})) { //Starts with the offset. Sprite pointer  after offset.
 				int stopPoint = getStopPoint(actualData, nextData, spritePointer);
 				
 				int offset;
-				ROM.read(spritePointer); //This means that the pointer is after the size.
-				offset = Util.toBigEndian(spritePointer); //This is the real first offset. Change please
+				ROM.read(spritePointer); 
+				offset = Util.toBigEndian(spritePointer); //This is the first offset, pre-sprite.
 				ROM.read(spritePointer);
 				do {
 					currentSprite = Util.toIndex(spritePointer);
@@ -94,7 +76,7 @@ public class PokemonGraphics {
 					ROM.seek(fp);
 					ROM.read(spritePointer);
 
-					if(current != null) 
+					if(current != null) //Will add a subsprite or a sprite depending on which is needed.
 						current.addSubsprite(mySprite,offset);
 					else
 						current = new Sprite(mySprite,offset);
@@ -103,31 +85,32 @@ public class PokemonGraphics {
 					offset = Util.toBigEndian(spritePointer);
 					ROM.read(spritePointer);
 				} while(ROM.getFilePointer() < stopPoint - 0x10);
+				current.addOffset(offset); //Should add the post-sprite offset if necessary.
 				newSprites.add(current);
-				
 			}
-			else {
+			else { //Simpler condition, start with the sprite.
 				int stopPoint = getStopPoint(actualData, nextData, spritePointer);
-				int offset;
+				int offset = 0;
 				do {	
-					
-					currentSprite = Util.toIndex(spritePointer);
-					ROM.read(spritePointer);	
-					numBytesRead = Util.toBigEndian(spritePointer);	//actually tileSize
+					currentSprite = Util.toIndex(spritePointer); //Gets our graphics index
+					ROM.read(spritePointer);
+					numBytesRead = Util.toBigEndian(spritePointer);	//Gets tileSize
 					long fp = ROM.getFilePointer();
-					int[] mySprite = spriteToPicture(currentSprite, numBytesRead);
+					int[] mySprite = spriteToPicture(currentSprite, numBytesRead);//reads graphics with new information
 					ROM.seek(fp);
-					ROM.read(spritePointer);
+					ROM.read(spritePointer);//returns back to sprite data
 					
-					ROM.read(spritePointer);
-					offset = Util.toBigEndian(spritePointer);
+					
 					if(current != null) 
 						current.addSubsprite(mySprite,offset);
 					else
 						current = new Sprite(mySprite,offset);
 					
 					ROM.read(spritePointer);
+					offset = Util.toBigEndian(spritePointer);
+					ROM.read(spritePointer);
 				} while(ROM.getFilePointer() < stopPoint - 0x10);
+				current.addOffset(offset);
 				newSprites.add(current);
 			}
 			currentSpriteData+=4;

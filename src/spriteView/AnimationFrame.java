@@ -22,10 +22,14 @@ public class AnimationFrame {
 	}
 	
 	public int getVDisplacement() {
-		return 0;
+		return objAttrib0[0];
 	}
 	
 	public int getHDisplacement() {
+		return objAttrib1[0];
+	}
+	
+	public int getTileNumber() {
 		return 0;
 	}
 	
